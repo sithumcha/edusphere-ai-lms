@@ -1,0 +1,18 @@
+# Dependencies
+node_modules
+client/node_modules
+server/node_modules
+
+# Environment & Secrets
+server/.env
+.env
+.env.local
+
+# Build Outputs
+client/dist
+client/build
+
+# IDE & System Files
+.DS_Store
+*.log
+.gemini
