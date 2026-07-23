@@ -26,12 +26,13 @@ const seedData = async () => {
 
     console.log('[Seeder] Cleared previous records.');
 
-    // Create Default Users
+    // Create Password Hash
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash('password123', salt);
 
+    // 1. Create Default Users
     const adminUser = await User.create({
-      name: 'Alex Vance (Admin)',
+      name: 'Alex Vance',
       email: 'admin@lms.com',
       password: passwordHash,
       role: 'admin',
@@ -55,19 +56,19 @@ const seedData = async () => {
       password: passwordHash,
       role: 'student',
       avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-      bio: 'Passionate developer learning AI integration & web development.'
+      bio: 'Passionate student learning AI engineering & full-stack development.'
     });
 
     console.log('[Seeder] Users created successfully (admin@lms.com, instructor@lms.com, student@lms.com).');
 
-    // Create Sample Courses
+    // 2. Create Real Courses
     const course1 = await Course.create({
       title: 'Full-Stack Web Development with AI & React',
       description: 'Master modern frontend & backend development integrated with Gemini AI models, RAG tutors, and automated quiz generation.',
       thumbnail: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=80',
       instructorId: instructorUser._id,
       instructorName: instructorUser.name,
-      category: 'Web Development',
+      category: 'Computer Science',
       level: 'intermediate',
       price: 49.99,
       status: 'published',
@@ -90,34 +91,15 @@ const seedData = async () => {
               title: 'Lesson 1.1: Platform Overview & System Setup',
               videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
               duration: '08:45',
-              transcript: 'Welcome to Full-Stack AI Web Development. In this video, we setup our Vite React environment, Node Express backend, and link Google Gemini API for intelligent chatbot tutors.',
-              aiSummary: 'Overview of building modern full-stack web apps integrated with AI features like automated quiz generation and interactive RAG tutors.',
-              resources: [
-                { title: 'Course Architecture Diagram PDF', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', type: 'pdf' }
-              ]
+              transcript: 'Welcome to Full-Stack AI Web Development. In this video, we setup our Vite React environment, Node Express backend, and link Google Gemini API.',
+              aiSummary: 'Overview of building modern full-stack web apps integrated with AI features.'
             },
             {
               title: 'Lesson 1.2: State Management & Component Architecture',
               videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
               duration: '12:30',
-              transcript: 'Understanding React context, custom hooks, and state management for real-time video progress tracking and floating chatbot widgets.',
-              aiSummary: 'Deep dive into React context providers, hooks, and clean state handling.',
-              resources: []
-            }
-          ]
-        },
-        {
-          title: 'Module 2: RAG Architecture & Gemini API Integration',
-          lessons: [
-            {
-              title: 'Lesson 2.1: Building the RAG AI Tutor Widget',
-              videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-              duration: '15:10',
-              transcript: 'Retrieval Augmented Generation (RAG) allows AI chatbots to reference course syllabus and lesson transcripts accurately without hallucination.',
-              aiSummary: 'Explores how to inject course transcript context into AI prompts for accurate tutor responses.',
-              resources: [
-                { title: 'Gemini RAG Prompt Guide PDF', url: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', type: 'pdf' }
-              ]
+              transcript: 'Understanding React context, custom hooks, and state management.',
+              aiSummary: 'Deep dive into React context providers and state handling.'
             }
           ]
         }
@@ -126,27 +108,26 @@ const seedData = async () => {
 
     const course2 = await Course.create({
       title: 'Python for Data Science & AI Prompt Engineering',
-      description: 'Learn Python fundamentals, data visualization with Pandas, and advanced prompt engineering strategies for Gemini & OpenAI models.',
+      description: 'Learn Python fundamentals, data visualization with Pandas, and advanced prompt engineering strategies for Gemini models.',
       thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
       instructorId: instructorUser._id,
       instructorName: instructorUser.name,
       category: 'Data Science',
       level: 'beginner',
-      price: 0, // Free course
+      price: 94.99,
       status: 'published',
-      averageRating: 4.7,
-      totalReviews: 8,
+      averageRating: 4.9,
+      totalReviews: 18,
       modules: [
         {
-          title: 'Module 1: Python Essentials',
+          title: 'Module 1: Python Data Science Essentials',
           lessons: [
             {
-              title: 'Lesson 1.1: Data Types & Logic',
+              title: 'Lesson 1.1: Data Structures & Numpy Arrays',
               videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
               duration: '10:00',
-              transcript: 'Python basics covering variables, data structures, loops, functions, and structured JSON output for AI generators.',
-              aiSummary: 'Fundamental Python concepts and data parsing routines for AI applications.',
-              resources: []
+              transcript: 'Python data science basics covering numpy arrays and matrices.',
+              aiSummary: 'Fundamental Python concepts and data parsing routines.'
             }
           ]
         }
@@ -163,28 +144,83 @@ const seedData = async () => {
       level: 'intermediate',
       price: 29.99,
       status: 'published',
-      averageRating: 4.95,
+      averageRating: 4.8,
       totalReviews: 15,
       modules: [
         {
-          title: 'Module 1: Visual Excellence & CSS Tokens',
+          title: 'Module 1: Visual Design Tokens',
           lessons: [
             {
-              title: 'Lesson 1.1: Creating Glassmorphism & Micro-animations',
+              title: 'Lesson 1.1: Glassmorphic UI Systems',
               videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
               duration: '14:20',
-              transcript: 'How to craft glassmorphic cards, linear gradient borders, backdrop blur filters, and accessible contrast ratios.',
-              aiSummary: 'CSS techniques for modern dark glass themes and vibrant UI interfaces.',
-              resources: []
+              transcript: 'Crafting glassmorphic cards and micro-animations.',
+              aiSummary: 'CSS techniques for modern dark glass themes.'
             }
           ]
         }
       ]
     });
 
-    console.log('[Seeder] Sample courses created.');
+    const course4 = await Course.create({
+      title: 'AWS Certified Solutions Architect Associate 2026',
+      description: 'Comprehensive cloud architecture masterclass covering EC2, S3, Lambda, VPCs, and serverless deployment pipelines.',
+      thumbnail: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=80',
+      instructorId: instructorUser._id,
+      instructorName: instructorUser.name,
+      category: 'Cloud Computing',
+      level: 'advanced',
+      price: 119.99,
+      status: 'published',
+      averageRating: 4.7,
+      totalReviews: 24,
+      modules: [
+        {
+          title: 'Module 1: AWS Core Cloud Infrastructure',
+          lessons: [
+            {
+              title: 'Lesson 1.1: Virtual Private Cloud (VPC) Setup',
+              videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+              duration: '18:30',
+              transcript: 'Configuring AWS VPC subnets, route tables, and internet gateways.',
+              aiSummary: 'AWS networking and cloud security fundamentals.'
+            }
+          ]
+        }
+      ]
+    });
 
-    // Create Sample Quiz for Course 1
+    const course5 = await Course.create({
+      title: 'Strategic MBA Essentials: Business Strategy & Execution',
+      description: 'Learn executive decision making, financial analysis, market positioning, and growth strategies for modern digital startups.',
+      thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
+      instructorId: instructorUser._id,
+      instructorName: instructorUser.name,
+      category: 'Business',
+      level: 'beginner',
+      price: 79.99,
+      status: 'published',
+      averageRating: 4.85,
+      totalReviews: 9,
+      modules: [
+        {
+          title: 'Module 1: Corporate Strategy',
+          lessons: [
+            {
+              title: 'Lesson 1.1: Market Entry & Competitive Advantage',
+              videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+              duration: '15:40',
+              transcript: 'Frameworks for strategic market positioning.',
+              aiSummary: 'Business frameworks for corporate strategy execution.'
+            }
+          ]
+        }
+      ]
+    });
+
+    console.log('[Seeder] 5 Published Real Courses Created.');
+
+    // 3. Create Real Quizzes
     const lesson1Id = course1.modules[0].lessons[0]._id.toString();
     const quiz1 = await Quiz.create({
       courseId: course1._id,
@@ -201,24 +237,13 @@ const seedData = async () => {
             'RAG encrypts user passwords in MongoDB'
           ],
           correctAnswer: 0,
-          explanation: 'RAG supplies relevant course context to the AI model so answers are accurate and hallucination-free.'
-        },
-        {
-          question: 'Which HTTP header is standard for JWT authentication in Express APIs?',
-          options: [
-            'Authorization: Bearer <token>',
-            'X-Custom-Token: <token>',
-            'Content-Type: token',
-            'Accept: application/jwt'
-          ],
-          correctAnswer: 0,
-          explanation: 'The standard Bearer token scheme is used in Authorization HTTP headers.'
+          explanation: 'RAG supplies relevant course context to the AI model so answers are accurate.'
         }
       ]
     });
 
-    // Create Sample Enrollment & Progress for Student
-    await Enrollment.create({
+    // 4. Create Real Enrollments for Student
+    const enrollment1 = await Enrollment.create({
       studentId: studentUser._id,
       courseId: course1._id,
       progress: [
@@ -228,13 +253,45 @@ const seedData = async () => {
       certificateIssued: false
     });
 
-    // Update Student enrolledCourses array
-    studentUser.enrolledCourses.push(course1._id);
+    const enrollment2 = await Enrollment.create({
+      studentId: studentUser._id,
+      courseId: course2._id,
+      progress: [],
+      overallProgress: 0,
+      certificateIssued: false
+    });
+
+    // Add to User & Course schema references
+    studentUser.enrolledCourses.push(course1._id, course2._id);
     await studentUser.save();
 
-    // Update Course enrolledStudents array
     course1.enrolledStudents.push(studentUser._id);
     await course1.save();
+
+    course2.enrolledStudents.push(studentUser._id);
+    await course2.save();
+
+    // 5. Create Real Quiz Attempts for Student Analytics
+    await QuizAttempt.create({
+      studentId: studentUser._id,
+      quizId: quiz1._id,
+      score: 95,
+      totalQuestions: 2,
+      correctAnswers: 2,
+      passed: true
+    });
+
+    // 6. Create Real Certificate for Student
+    const certId = `CERT-${Date.now()}-8821`;
+    await Certificate.create({
+      certificateId: certId,
+      studentId: studentUser._id,
+      studentName: studentUser.name,
+      courseId: course1._id,
+      courseTitle: course1.title,
+      instructorName: course1.instructorName,
+      issueDate: new Date()
+    });
 
     console.log('[Seeder] Database seeding completed successfully!');
     process.exit(0);

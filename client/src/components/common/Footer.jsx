@@ -46,10 +46,10 @@ const Footer = () => {
               RESOURCES
             </h4>
             <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <li><a href="#help" style={{ color: 'var(--text-title)', textDecoration: 'none' }}>Help Center</a></li>
-              <li><a href="#blog" style={{ color: 'var(--text-title)', textDecoration: 'none' }}>Blog</a></li>
-              <li><a href="#community" style={{ color: 'var(--text-title)', textDecoration: 'none' }}>Community</a></li>
-              <li><a href="#accessibility" style={{ color: 'var(--text-title)', textDecoration: 'none' }}>Accessibility</a></li>
+              <li><Link to="/how-to-use" style={{ color: '#6366f1', fontWeight: 700, textDecoration: 'none' }}>How to Use ❓</Link></li>
+              <li><Link to="/resources" style={{ color: 'var(--text-title)', textDecoration: 'none' }}>Resource Hub</Link></li>
+              <li><Link to="/code-sandbox" style={{ color: 'var(--text-title)', textDecoration: 'none' }}>Code Sandbox</Link></li>
+              <li><Link to="/virtual-classroom" style={{ color: 'var(--text-title)', textDecoration: 'none' }}>Virtual Classroom</Link></li>
             </ul>
           </div>
 
@@ -65,16 +65,6 @@ const Footer = () => {
             </ul>
           </div>
 
-        </div>
-
-        {/* Bottom Bar */}
-        <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          <span>© 2026 EduSphere AI. Empowering deep learning.</span>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <a href="#twitter" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Twitter</a>
-            <a href="#linkedin" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>LinkedIn</a>
-            <a href="#instagram" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Instagram</a>
-          </div>
         </div>
 
       </div>

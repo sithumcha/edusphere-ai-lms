@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
+import { ToastProvider } from './components/common/Toast';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -17,99 +19,126 @@ import ForgotPassword from './pages/ForgotPassword';
 import ProfilePage from './pages/ProfilePage';
 import ResourcesPage from './pages/ResourcesPage';
 import CertificatePage from './pages/CertificatePage';
+import CodeSandboxPage from './pages/CodeSandboxPage';
+import VirtualClassroomPage from './pages/VirtualClassroomPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import InstructorDashboardPage from './pages/InstructorDashboardPage';
+import CreateCoursePage from './pages/CreateCoursePage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import HowToUsePage from './pages/HowToUsePage';
+import CareerRoadmapPage from './pages/CareerRoadmapPage';
+import MockInterviewPage from './pages/MockInterviewPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import ResumeBuilderPage from './pages/ResumeBuilderPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <Navbar />
-          <main style={{ minHeight: 'calc(100vh - 250px)' }}>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/courses" element={<CoursesPage />} />
-              <Route path="/courses/:id" element={<CourseDetailsPage />} />
-              <Route path="/resources" element={<ResourcesPage />} />
-              <Route path="/certificate/:courseId" element={<CertificatePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
+      <LanguageProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <Navbar />
+              <main style={{ minHeight: 'calc(100vh - 250px)' }}>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/courses" element={<CoursesPage />} />
+                  <Route path="/courses/:id" element={<CourseDetailsPage />} />
+                  <Route path="/resources" element={<ResourcesPage />} />
+                  <Route path="/how-to-use" element={<HowToUsePage />} />
+                  <Route path="/career-roadmap" element={<CareerRoadmapPage />} />
+                  <Route path="/mock-interview" element={<MockInterviewPage />} />
+                  <Route path="/leaderboard" element={<LeaderboardPage />} />
+                  <Route path="/resume-builder" element={<ResumeBuilderPage />} />
+                  <Route path="/certificate/:courseId" element={<CertificatePage />} />
+                  <Route path="/code-sandbox" element={<CodeSandboxPage />} />
+                  <Route path="/virtual-classroom" element={<VirtualClassroomPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
 
-              {/* Student Protected Routes */}
-              <Route
-                path="/checkout/:courseId"
-                element={
-                  <ProtectedRoute>
-                    <CheckoutPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/learn/:courseId"
-                element={
-                  <ProtectedRoute>
-                    <CourseLearningPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/student"
-                element={
-                  <ProtectedRoute allowedRoles={['student', 'admin', 'instructor']}>
-                    <StudentDashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/student/certificates"
-                element={
-                  <ProtectedRoute allowedRoles={['student', 'admin', 'instructor']}>
-                    <StudentDashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Student Protected Routes */}
+                <Route
+                  path="/checkout/:courseId"
+                  element={
+                    <ProtectedRoute>
+                      <CheckoutPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/learn/:courseId"
+                  element={
+                    <ProtectedRoute>
+                      <CourseLearningPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/student"
+                  element={
+                    <ProtectedRoute allowedRoles={['student', 'admin', 'instructor']}>
+                      <StudentDashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/student/certificates"
+                  element={
+                    <ProtectedRoute allowedRoles={['student', 'admin', 'instructor']}>
+                      <StudentDashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Instructor Protected Routes */}
-              <Route
-                path="/dashboard/instructor"
-                element={
-                  <ProtectedRoute allowedRoles={['instructor', 'admin']}>
-                    <InstructorDashboardPage />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Instructor Protected Routes */}
+                <Route
+                  path="/dashboard/instructor"
+                  element={
+                    <ProtectedRoute allowedRoles={['instructor', 'admin']}>
+                      <InstructorDashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/instructor/create-course"
+                  element={
+                    <ProtectedRoute allowedRoles={['instructor', 'admin']}>
+                      <CreateCoursePage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Admin Protected Routes */}
-              <Route
-                path="/dashboard/admin"
-                element={
-                  <ProtectedRoute allowedRoles={['admin']}>
-                    <AdminDashboardPage />
-                  </ProtectedRoute>
-                }
-              />
+                {/* Admin Protected Routes */}
+                <Route
+                  path="/dashboard/admin"
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminDashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* 404 Fallback */}
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </main>
-          <Footer />
-        </BrowserRouter>
+                {/* 404 Fallback */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </main>
+            <Footer />
+          </BrowserRouter>
+        </ToastProvider>
       </AuthProvider>
-    </ThemeProvider>
+    </LanguageProvider>
+  </ThemeProvider>
   );
 }
 

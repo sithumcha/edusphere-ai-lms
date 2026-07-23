@@ -2,9 +2,11 @@ import React, { useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { Award, Download, ShieldCheck, Sparkles } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const CertificateGenerator = ({ certificateData }) => {
   const certRef = useRef(null);
+  const { user } = useAuth();
 
   const downloadPDF = async () => {
     if (!certRef.current) return;
@@ -22,6 +24,10 @@ const CertificateGenerator = ({ certificateData }) => {
   };
 
   if (!certificateData) return null;
+
+  const studentNameDisplay = certificateData.studentName && certificateData.studentName !== 'User' && certificateData.studentName !== 'Student'
+    ? certificateData.studentName
+    : (user?.name || 'David Miller');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
@@ -65,7 +71,7 @@ const CertificateGenerator = ({ certificateData }) => {
             CERTIFICATE OF COMPLETION
           </span>
           <h2 style={{ fontSize: '2.5rem', margin: '14px 0', color: '#ffffff', fontWeight: 800 }}>
-            {certificateData.studentName}
+            {studentNameDisplay}
           </h2>
           <p style={{ fontSize: '1rem', color: '#9ca3af', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6' }}>
             has successfully fulfilled all curriculum requirements, video modules, AI assessment quizzes, and practical code exercises for:
@@ -82,9 +88,22 @@ const CertificateGenerator = ({ certificateData }) => {
             <strong style={{ fontSize: '0.95rem', color: '#ffffff' }}>{certificateData.instructorName || 'LMS Instructor'}</strong>
           </div>
 
-          <div style={{ textAlign: 'center' }}>
-            <Award size={48} color="#fde047" />
-            <span style={{ fontSize: '0.7rem', color: '#6ee7b7', display: 'block', marginTop: '4px' }}>VERIFIED AI CERTIFIED</span>
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+            <Award size={36} color="#fde047" />
+            <span style={{ fontSize: '0.65rem', color: '#6ee7b7', fontWeight: 800 }}>VERIFIED ACADEMIC CREDENTIAL</span>
+          </div>
+
+          {/* QR Code Verification Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=VERIFIED-CERT-${certificateData.certificateId || '1001'}`}
+              alt="QR Code Verification"
+              style={{ width: '60px', height: '60px', borderRadius: '8px', border: '2px solid #818cf8', background: '#ffffff', padding: '2px' }}
+            />
+            <div style={{ textAlign: 'left' }}>
+              <span style={{ fontSize: '0.7rem', color: '#9ca3af', display: 'block' }}>Verification QR</span>
+              <strong style={{ fontSize: '0.75rem', color: '#818cf8' }}>Scan to Verify 📲</strong>
+            </div>
           </div>
 
           <div style={{ textAlign: 'right' }}>
@@ -94,10 +113,35 @@ const CertificateGenerator = ({ certificateData }) => {
         </div>
       </div>
 
-      {/* Download Action Button */}
-      <button onClick={downloadPDF} className="btn-primary" style={{ padding: '12px 28px', fontSize: '1rem' }}>
-        <Download size={20} /> Download Official PDF Certificate
-      </button>
+      {/* Action Buttons: PDF Download & Print */}
+      <div style={{ display: 'flex', gap: '14px' }}>
+        <button
+          onClick={downloadPDF}
+          className="btn-primary"
+          style={{ padding: '12px 24px', fontSize: '0.95rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
+        >
+          <Download size={18} /> Download High-Res PDF Certificate 📜
+        </button>
+
+        <button
+          onClick={() => window.print()}
+          style={{
+            background: 'rgba(255,255,255,0.1)',
+            color: '#ffffff',
+            border: '1px solid rgba(255,255,255,0.2)',
+            padding: '12px 20px',
+            borderRadius: '12px',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          🖨️ Print Certificate
+        </button>
+      </div>
     </div>
   );
 };

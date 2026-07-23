@@ -62,7 +62,7 @@ const getCourseById = async (req, res) => {
 // @route POST /api/courses
 const createCourse = async (req, res) => {
   try {
-    const { title, description, thumbnail, category, level, price, modules } = req.body;
+    const { title, description, thumbnail, category, level, price, status, modules, quizzes } = req.body;
 
     const course = new Course({
       title,
@@ -72,9 +72,10 @@ const createCourse = async (req, res) => {
       instructorName: req.user.name || 'Instructor',
       category: category || 'Web Development',
       level: level || 'beginner',
-      price: price || 0,
-      status: req.user.role === 'admin' ? 'published' : 'pending',
-      modules: modules || []
+      price: price !== undefined ? Number(price) : 0,
+      status: status || 'published',
+      modules: modules || [],
+      quizzes: quizzes || []
     });
 
     const createdCourse = await course.save();
@@ -98,7 +99,7 @@ const updateCourse = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to edit this course' });
     }
 
-    const { title, description, thumbnail, category, level, price, status, modules } = req.body;
+    const { title, description, thumbnail, category, level, price, status, modules, quizzes } = req.body;
 
     if (title) course.title = title;
     if (description) course.description = description;
@@ -108,6 +109,7 @@ const updateCourse = async (req, res) => {
     if (price !== undefined) course.price = price;
     if (status) course.status = status;
     if (modules) course.modules = modules;
+    if (quizzes) course.quizzes = quizzes;
 
     const updatedCourse = await course.save();
     res.json(updatedCourse);

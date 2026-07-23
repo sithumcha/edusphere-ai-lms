@@ -316,8 +316,10 @@ const AdminDashboardPage = () => {
                     <span className="badge badge-emerald">Healthy</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Server Health</span>
-                    <h3 style={{ fontSize: '1.6rem', color: 'var(--text-title)', fontWeight: 800 }}>99.98%</h3>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Total Platform Courses</span>
+                    <h3 style={{ fontSize: '1.6rem', color: 'var(--text-title)', fontWeight: 800 }}>
+                      {stats?.totalCourses ?? 5} Courses
+                    </h3>
                   </div>
                 </div>
 
@@ -326,11 +328,13 @@ const AdminDashboardPage = () => {
                     <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#3730a3', color: '#a9a7ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <TrendingUp size={20} />
                     </div>
-                    <span style={{ fontWeight: 800, color: '#6b38d4', fontSize: '0.85rem' }}>+12.4%</span>
+                    <span style={{ fontWeight: 800, color: '#6b38d4', fontSize: '0.85rem' }}>Live</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Active Users</span>
-                    <h3 style={{ fontSize: '1.6rem', color: 'var(--text-title)', fontWeight: 800 }}>24.8k</h3>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Registered Users</span>
+                    <h3 style={{ fontSize: '1.6rem', color: 'var(--text-title)', fontWeight: 800 }}>
+                      {stats?.totalUsers ?? usersList.length} Users
+                    </h3>
                   </div>
                 </div>
 
@@ -340,16 +344,18 @@ const AdminDashboardPage = () => {
                       <DollarSign size={20} />
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#6b38d4', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Monthly Recurring Revenue</span>
-                      <h3 style={{ fontSize: '1.6rem', color: 'var(--text-title)', fontWeight: 800 }}>$142,500</h3>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#6b38d4', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Platform Revenue</span>
+                      <h3 style={{ fontSize: '1.6rem', color: 'var(--text-title)', fontWeight: 800 }}>
+                        ${stats?.totalPlatformRevenue ? stats.totalPlatformRevenue.toLocaleString() : '0.00'}
+                      </h3>
                     </div>
                   </div>
 
                   <div>
                     <div style={{ height: '5px', width: '100%', background: 'rgba(200, 196, 213, 0.3)', borderRadius: '3px', overflow: 'hidden', marginBottom: '6px' }}>
-                      <div style={{ width: '78%', height: '100%', background: '#6b38d4' }} />
+                      <div style={{ width: '100%', height: '100%', background: '#6b38d4' }} />
                     </div>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>78% of quarterly goal reached</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Real-time database metrics</span>
                   </div>
                 </div>
               </div>

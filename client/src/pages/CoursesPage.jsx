@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import Loader from '../components/common/Loader';
+import { useLanguage } from '../context/LanguageContext';
 import {
   Search,
   Star,
@@ -74,13 +75,13 @@ const CoursesPage = () => {
   const [dbCourses, setDbCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filters State
+  // Filters State (Default to all so all seeded courses show immediately)
   const [search, setSearch] = useState(initialSearch);
-  const [selectedCategories, setSelectedCategories] = useState(['Computer Science']);
-  const [selectedLevels, setSelectedLevels] = useState(['Intermediate']);
-  const [priceType, setPriceType] = useState('paid');
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedLevels, setSelectedLevels] = useState([]);
+  const [priceType, setPriceType] = useState('all');
   const [ratingFilter, setRatingFilter] = useState(false);
-  const [selectedDurations, setSelectedDurations] = useState(['3-10 Hours']);
+  const [selectedDurations, setSelectedDurations] = useState([]);
   const [sortBy, setSortBy] = useState('Most Popular');
 
   useEffect(() => {
@@ -125,7 +126,22 @@ const CoursesPage = () => {
     setSelectedDurations([]);
   };
 
-  const displayCourses = dbCourses.length > 0 ? dbCourses : SAMPLE_COURSES;
+  // Filter dynamic DB courses
+  const filteredCourses = dbCourses.filter((course) => {
+    if (search.trim() && !course.title?.toLowerCase().includes(search.toLowerCase()) && !course.category?.toLowerCase().includes(search.toLowerCase())) {
+      return false;
+    }
+    if (selectedCategories.length > 0 && !selectedCategories.includes(course.category)) {
+      return false;
+    }
+    if (selectedLevels.length > 0 && !selectedLevels.map(l => l.toLowerCase()).includes(course.level?.toLowerCase())) {
+      return false;
+    }
+    if (priceType === 'free' && course.price > 0) return false;
+    if (priceType === 'paid' && (course.price === 0 || !course.price)) return false;
+    if (ratingFilter && (course.averageRating || 5) < 4.5) return false;
+    return true;
+  });
 
   return (
     <div style={{ maxWidth: '1280px', margin: '30px auto', padding: '0 24px' }}>
@@ -335,43 +351,73 @@ const CoursesPage = () => {
           </div>
 
           {/* 3-COLUMN COURSE CARDS GRID */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '24px' }}>
-            {displayCourses.map((c, idx) => {
-              const staticSample = SAMPLE_COURSES[idx % 4];
-              const title = c.title || staticSample.title;
-              const category = c.category || staticSample.category;
-              const rating = c.rating || staticSample.rating;
-              const price = c.price ? (typeof c.price === 'number' ? `$${c.price}` : c.price) : staticSample.price;
-              const duration = c.duration || staticSample.duration;
-              const thumbnail = c.thumbnail || staticSample.thumbnail;
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '24px' }}>
+            {filteredCourses.length > 0 ? (
+              filteredCourses.map((c) => {
+                const title = c.title;
+                const category = c.category || 'General';
+                const rating = c.averageRating ? `${c.averageRating} (${c.totalReviews || 12})` : '4.8 (10+)';
+                const price = c.price === 0 ? 'Free' : (typeof c.price === 'number' ? `$${c.price}` : c.price || 'Free');
+                const thumbnail = c.thumbnail || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&auto=format&fit=crop&q=80';
 
-              return (
-                <div key={c._id || idx} className="glass-card glass-card-hover" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRadius: '18px' }}>
-                  <div style={{ height: '160px', overflow: 'hidden' }}>
-                    <img src={thumbnail} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
+                return (
+                  <Link
+                    key={c._id}
+                    to={`/courses/${c._id}`}
+                    className="glass-card glass-card-hover"
+                    style={{
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      borderRadius: '18px',
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                    }}
+                  >
+                    <div style={{ height: '160px', overflow: 'hidden' }}>
+                      <img src={thumbnail} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
 
-                  <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#059669', display: 'block', marginBottom: '6px' }}>
-                        {category}
-                      </span>
-                      <h3 style={{ fontSize: '1rem', color: 'var(--text-title)', marginBottom: '10px', lineHeight: '1.35', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                        {title}
-                      </h3>
-                      <div style={{ fontSize: '0.8rem', color: '#f59e0b', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Star size={14} fill="#f59e0b" color="#f59e0b" /> {rating}
+                    <div style={{ padding: '18px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#7c3aed', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+                          {category}
+                        </span>
+
+                        <h3 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-title)', marginBottom: '8px', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {title}
+                        </h3>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-title)', fontWeight: 700, marginBottom: '14px' }}>
+                          <Star size={14} fill="#f59e0b" color="#f59e0b" />
+                          <span>{rating}</span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-glass)', paddingTop: '12px' }}>
+                        <strong style={{ fontSize: '1.1rem', color: 'var(--text-title)' }}>{price}</strong>
+                        <span style={{ color: '#1f108e', fontWeight: 700, fontSize: '0.82rem' }}>
+                          View Details →
+                        </span>
                       </div>
                     </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-glass)', paddingTop: '12px' }}>
-                      <strong style={{ fontSize: '1.15rem', color: '#1e1b4b' }}>{price}</strong>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{duration}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                  </Link>
+                );
+              })
+            ) : (
+              <div className="glass-card" style={{ padding: '36px', textAlign: 'center', gridColumn: '1 / -1', borderRadius: '20px' }}>
+                <BookOpen size={36} color="#7c3aed" style={{ marginBottom: '12px' }} />
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-title)', marginBottom: '8px' }}>No Courses Found</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
+                  Try adjusting your search query or filters to find what you are looking for.
+                </p>
+                <button onClick={handleClearAll} className="btn-primary" style={{ margin: '0 auto' }}>
+                  Reset Filters
+                </button>
+              </div>
+            )}
           </div>
 
         </main>

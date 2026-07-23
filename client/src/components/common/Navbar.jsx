@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   Sparkles,
   Search,
@@ -18,6 +19,7 @@ import {
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { lang, setLang, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,7 +31,7 @@ const Navbar = () => {
   ]);
 
   const handleRemoveNotification = (id) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   const handleClearAll = () => {
@@ -52,17 +54,17 @@ const Navbar = () => {
 
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 50, backdropFilter: 'blur(20px)', background: 'var(--bg-glass)', borderBottom: '1px solid var(--border-glass)' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px', height: '72px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 24px', height: '72px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' }}>
         
         {/* Brand & Main Nav Links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '36px' }}>
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-title)', letterSpacing: '-0.5px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '28px', flexShrink: 0 }}>
+          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-title)', letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>
               EduSphere <span style={{ color: 'var(--primary)' }}>AI</span>
             </span>
           </Link>
 
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '20px', whiteSpace: 'nowrap' }}>
             <Link
               to="/"
               style={{
@@ -70,11 +72,12 @@ const Navbar = () => {
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '0.9rem',
+                whiteSpace: 'nowrap',
                 borderBottom: location.pathname === '/' ? '2px solid var(--primary)' : 'none',
                 paddingBottom: '4px'
               }}
             >
-              Home
+              {t('home')}
             </Link>
             <Link
               to="/courses"
@@ -83,12 +86,14 @@ const Navbar = () => {
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '0.9rem',
+                whiteSpace: 'nowrap',
                 borderBottom: location.pathname === '/courses' ? '2px solid var(--primary)' : 'none',
                 paddingBottom: '4px'
               }}
             >
-              Browse Courses
+              {t('browseCourses')}
             </Link>
+
             {isAuthenticated && (
               <Link
                 to={getDashboardPath()}
@@ -96,10 +101,11 @@ const Navbar = () => {
                   color: location.pathname.startsWith('/dashboard') ? 'var(--primary)' : 'var(--text-muted)',
                   textDecoration: 'none',
                   fontWeight: 600,
-                  fontSize: '0.9rem'
+                  fontSize: '0.9rem',
+                  whiteSpace: 'nowrap'
                 }}
               >
-                My Learning
+                {t('myLearning')}
               </Link>
             )}
             <Link
@@ -109,22 +115,51 @@ const Navbar = () => {
                 textDecoration: 'none',
                 fontWeight: 600,
                 fontSize: '0.9rem',
+                whiteSpace: 'nowrap',
                 borderBottom: location.pathname === '/resources' ? '2px solid var(--primary)' : 'none',
                 paddingBottom: '4px'
               }}
             >
-              Resources
+              {t('resources')}
+            </Link>
+            <Link
+              to="/how-to-use"
+              style={{
+                color: location.pathname === '/how-to-use' ? 'var(--primary)' : 'var(--text-muted)',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                whiteSpace: 'nowrap',
+                borderBottom: location.pathname === '/how-to-use' ? '2px solid var(--primary)' : 'none',
+                paddingBottom: '4px'
+              }}
+            >
+              {t('howToUse')}
+            </Link>
+            <Link
+              to="/career-roadmap"
+              style={{
+                color: location.pathname === '/career-roadmap' ? 'var(--primary)' : 'var(--text-muted)',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                whiteSpace: 'nowrap',
+                borderBottom: location.pathname === '/career-roadmap' ? '2px solid var(--primary)' : 'none',
+                paddingBottom: '4px'
+              }}
+            >
+              AI Roadmap 🗺️
             </Link>
           </nav>
         </div>
 
         {/* Search Bar & Right Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
           <form onSubmit={handleSearchSubmit} style={{ position: 'relative', width: '220px' }}>
             <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
             <input
               type="text"
-              placeholder="Search courses..."
+              placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="form-input"
@@ -197,6 +232,20 @@ const Navbar = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Multi-Language Selector Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--bg-main)', border: '1px solid var(--border-glass)', borderRadius: '16px', padding: '2px 8px' }}>
+            <Globe size={14} color="var(--primary)" />
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-title)', fontSize: '0.78rem', fontWeight: 700, outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="en" style={{ background: 'var(--bg-card)' }}>🇺🇸 EN</option>
+              <option value="si" style={{ background: 'var(--bg-card)' }}>🇱🇰 SI (සිංහල)</option>
+              <option value="ta" style={{ background: 'var(--bg-card)' }}>🇱🇰 TA (தமிழ்)</option>
+            </select>
           </div>
 
           {/* Theme Switcher Sun/Moon */}

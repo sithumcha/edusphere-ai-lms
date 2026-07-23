@@ -2,7 +2,9 @@ const {
   generateQuizFromAI,
   getAIChatTutorResponse,
   summarizeTranscriptAI,
-  generateCourseRecommendationsAI
+  generateCourseRecommendationsAI,
+  runAndReviewCodeAI,
+  fixAndFormatCodeAI
 } = require('../services/aiService');
 const Course = require('../models/Course');
 const ChatHistory = require('../models/ChatHistory');
@@ -181,9 +183,45 @@ const getRecommendations = async (req, res) => {
   }
 };
 
+// @desc Run and AI Review Code Sandbox Script
+// @route POST /api/ai/run-code
+const runCode = async (req, res) => {
+  try {
+    const { code, language } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ message: 'Code content is required for execution' });
+    }
+
+    const result = await runAndReviewCodeAI(code, language || 'python');
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc Auto-Fix & Format Code Script
+// @route POST /api/ai/fix-code
+const fixCode = async (req, res) => {
+  try {
+    const { code, language } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ message: 'Code content is required for fixing' });
+    }
+
+    const result = await fixAndFormatCodeAI(code, language || 'python');
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   generateQuiz,
   chatWithTutor,
   summarizeTranscript,
-  getRecommendations
+  getRecommendations,
+  runCode,
+  fixCode
 };

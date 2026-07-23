@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Loader from '../components/common/Loader';
 import { useAuth } from '../context/AuthContext';
@@ -115,7 +116,206 @@ const INITIAL_GENERATED_QUESTIONS = [
 
 const InstructorDashboardPage = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState('Dashboard');
+
+  const [instructorStats, setInstructorStats] = useState(null);
+  const [instructorCourses, setInstructorCourses] = useState([]);
+
+  // Edit Course Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCourseId, setEditingCourseId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editCategory, setEditCategory] = useState('Web Development');
+  const [editPrice, setEditPrice] = useState('49.99');
+  const [editDesc, setEditDesc] = useState('');
+  const [editModules, setEditModules] = useState([]);
+  const [isUpdatingCourse, setIsUpdatingCourse] = useState(false);
+
+  const handleOpenEditModal = (c) => {
+    setEditingCourseId(c._id || c.id);
+    setEditTitle(c.title || '');
+    setEditCategory(c.category || 'Web Development');
+    setEditPrice(c.price !== undefined ? String(c.price) : '49.99');
+    setEditDesc(c.description || '');
+    setEditThumbnail(c.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=80');
+    setEditLevel(c.level || 'beginner');
+
+    if (c.modules && c.modules.length > 0) {
+      const formattedModules = c.modules.map((m, mIdx) => ({
+        id: Date.now() + mIdx,
+        title: m.title || `Module ${mIdx + 1}: Core Concepts`,
+        lessons: m.lessons && m.lessons.length > 0 ? m.lessons.map((l, lIdx) => ({
+          id: Date.now() + mIdx * 100 + lIdx,
+          title: l.title || `Lesson ${lIdx + 1}: Lecture Topic`,
+          videoUrl: l.videoUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+          duration: l.duration || '15 mins',
+          notes: l.transcript || l.aiSummary || 'Lesson notes & summary.'
+        })) : [
+          {
+            id: Date.now() + mIdx * 100,
+            title: 'Lesson 1: Introduction & Overview',
+            videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+            duration: '15 mins',
+            notes: 'Lesson study notes and guidelines.'
+          }
+        ]
+      }));
+      setEditModules(formattedModules);
+    } else {
+      setEditModules([
+        {
+          id: Date.now(),
+          title: 'Module 1: Core Fundamentals & Practical Setup',
+          lessons: [
+            {
+              id: Date.now() + 1,
+              title: 'Lesson 1: Introduction & Key Concepts',
+              videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+              duration: '15 mins',
+              notes: 'Overview of key module concepts.'
+            }
+          ]
+        }
+      ]);
+    }
+    setShowEditModal(true);
+  };
+
+  const handleAddEditModule = (count = 1) => {
+    setEditModules((prev) => {
+      const updated = [...prev];
+      const startCount = updated.length;
+      for (let i = 1; i <= count; i++) {
+        const modNum = startCount + i;
+        updated.push({
+          id: Date.now() + i + Math.random(),
+          title: `Module ${modNum}: Course Curriculum Section ${modNum}`,
+          lessons: [
+            {
+              id: Date.now() + i * 10 + Math.random(),
+              title: 'Lesson 1: Key Topic Overview',
+              videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+              duration: '15 mins',
+              notes: 'Lesson notes & summary.'
+            }
+          ]
+        });
+      }
+      return updated;
+    });
+  };
+
+  const handleRemoveEditModule = (modIdx) => {
+    if (editModules.length <= 1) {
+      alert('A course must have at least one module.');
+      return;
+    }
+    setEditModules((prev) => prev.filter((_, idx) => idx !== modIdx));
+  };
+
+  const handleAddEditLesson = (modIdx, count = 1) => {
+    setEditModules((prev) => {
+      const updated = [...prev];
+      const startCount = updated[modIdx].lessons.length;
+      for (let i = 1; i <= count; i++) {
+        updated[modIdx].lessons.push({
+          id: Date.now() + i + Math.random(),
+          title: `Lesson ${startCount + i}: Topic Lecture & Implementation`,
+          videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+          duration: '15 mins',
+          notes: 'Detailed lecture notes and step-by-step guidelines.'
+        });
+      }
+      return updated;
+    });
+  };
+
+  const handleRemoveEditLesson = (modIdx, lesIdx) => {
+    setEditModules((prev) => {
+      const updated = [...prev];
+      if (updated[modIdx].lessons.length <= 1) {
+        alert('Each module must have at least one lesson.');
+        return updated;
+      }
+      updated[modIdx].lessons = updated[modIdx].lessons.filter((_, idx) => idx !== lesIdx);
+      return updated;
+    });
+  };
+
+  const handleEditLessonChange = (modIdx, lesIdx, field, value) => {
+    setEditModules((prev) => {
+      const updated = [...prev];
+      updated[modIdx].lessons[lesIdx][field] = value;
+      return updated;
+    });
+  };
+
+  const handleSaveEditCourse = async (e) => {
+    e.preventDefault();
+    if (!editingCourseId) return;
+    setIsUpdatingCourse(true);
+
+    const modulesPayload = editModules.map((m) => ({
+      title: m.title.trim(),
+      lessons: m.lessons.map((l) => ({
+        title: l.title.trim(),
+        videoUrl: l.videoUrl.trim(),
+        duration: l.duration || '15 mins',
+        transcript: l.notes.trim(),
+        aiSummary: l.notes.trim()
+      }))
+    }));
+
+    const quizPayload = newQuizQuestions.map((q) => ({
+      question: q.question.trim() || 'What is the primary concept covered in this lesson?',
+      options: q.options && q.options.length === 4 ? q.options.map(opt => opt.trim()) : ['Option A', 'Option B', 'Option C', 'Option D'],
+      correctIndex: Number(q.correctIndex) || 0
+    }));
+
+    try {
+      await api.put(`/courses/${editingCourseId}`, {
+        title: editTitle.trim(),
+        category: editCategory,
+        price: Number(editPrice) || 0,
+        description: editDesc.trim(),
+        thumbnail: editThumbnail.trim() || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=80',
+        level: editLevel,
+        modules: modulesPayload,
+        quizzes: quizPayload
+      });
+
+      setShowEditModal(false);
+      alert(`Course "${editTitle}" updated successfully with all modules & lessons! 🚀`);
+
+      // Refresh instructor dashboard data
+      const statsRes = await api.get('/dashboard/instructor');
+      setInstructorStats(statsRes.data);
+      if (statsRes.data?.courses) {
+        setInstructorCourses(statsRes.data.courses);
+      }
+    } catch (err) {
+      console.error('Update course error:', err);
+      alert('Failed to update course.');
+    } finally {
+      setIsUpdatingCourse(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchInstructorData = async () => {
+      try {
+        const statsRes = await api.get('/dashboard/instructor');
+        setInstructorStats(statsRes.data);
+        if (statsRes.data?.courses) {
+          setInstructorCourses(statsRes.data.courses);
+        }
+      } catch (err) {
+        console.error('Fetch instructor stats error:', err);
+      }
+    };
+    fetchInstructorData();
+  }, []);
 
   // New Course Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -123,6 +323,90 @@ const InstructorDashboardPage = () => {
   const [newCategory, setNewCategory] = useState('Web Development');
   const [newPrice, setNewPrice] = useState('49.99');
   const [newDesc, setNewDesc] = useState('');
+  const [newStatus, setNewStatus] = useState('published');
+  const [newThumbnail, setNewThumbnail] = useState('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=80');
+  const [newLevel, setNewLevel] = useState('beginner');
+  const [newModuleTitle, setNewModuleTitle] = useState('Module 1: Core Fundamentals & Practical Setup');
+  const [newLessonTitle, setNewLessonTitle] = useState('Lesson 1: Key Concepts & Video Overview');
+  const [newVideoUrl, setNewVideoUrl] = useState('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
+  const [newLessonNotes, setNewLessonNotes] = useState('Overview of key module concepts, setup guidelines, and step-by-step notes.');
+  const [isCreatingCourse, setIsCreatingCourse] = useState(false);
+
+  // Edit Course Extra States
+  const [editThumbnail, setEditThumbnail] = useState('');
+  const [editLevel, setEditLevel] = useState('beginner');
+  const [editModuleTitle, setEditModuleTitle] = useState('');
+  const [editLessonTitle, setEditLessonTitle] = useState('');
+  const [editVideoUrl, setEditVideoUrl] = useState('');
+  const [editLessonNotes, setEditLessonNotes] = useState('');
+
+  // Custom Quiz Questions State inside Course Builder
+  const [newQuizQuestions, setNewQuizQuestions] = useState([
+    { question: 'What is the primary objective of neural network backpropagation?', options: ['Compute loss gradients & update weights', 'Render UI components', 'Store database indexes', 'Format HTML code'], correctIndex: 0 }
+  ]);
+
+  const handleImageFileUpload = (e, isEdit = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (isEdit) setEditThumbnail(reader.result);
+      else setNewThumbnail(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleVideoFileUpload = (e, isEdit = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (isEdit) setEditVideoUrl(reader.result);
+      else setNewVideoUrl(reader.result);
+      alert(`Video file "${file.name}" uploaded successfully! 🎥`);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleNotesFileUpload = (e, isEdit = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = typeof reader.result === 'string' ? reader.result : `Uploaded Notes File: ${file.name}`;
+      if (isEdit) setEditLessonNotes(text);
+      else setNewLessonNotes(text);
+      alert(`Lesson notes file "${file.name}" uploaded successfully! 📝`);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleAddQuizQuestion = () => {
+    setNewQuizQuestions(prev => [
+      ...prev,
+      { question: '', options: ['', '', '', ''], correctIndex: 0 }
+    ]);
+  };
+
+  const handleRemoveQuizQuestion = (index) => {
+    setNewQuizQuestions(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateQuizQuestion = (index, field, value, optIdx = 0) => {
+    setNewQuizQuestions(prev => {
+      const updated = [...prev];
+      if (field === 'question') {
+        updated[index].question = value;
+      } else if (field === 'option') {
+        const opts = [...(updated[index].options || ['', '', '', ''])];
+        opts[optIdx] = value;
+        updated[index].options = opts;
+      } else if (field === 'correctIndex') {
+        updated[index].correctIndex = Number(value);
+      }
+      return updated;
+    });
+  };
 
   // AI Quiz Studio States
   const [sourceContent, setSourceContent] = useState('');
@@ -137,12 +421,57 @@ const InstructorDashboardPage = () => {
   const [profName, setProfName] = useState(user?.name || 'Dr. Sarah Chen');
   const [profBio, setProfBio] = useState(user?.bio || 'Senior AI Engineer & Educator');
 
-  const handleCreateCourse = (e) => {
-    e.preventDefault();
-    setShowCreateModal(false);
-    alert(`Course "${newTitle}" created successfully as Draft!`);
-    setNewTitle('');
-    setNewDesc('');
+  const handleCreateCourse = async (statusToSet = 'published') => {
+    if (!newTitle.trim()) {
+      alert('Please enter a course title.');
+      return;
+    }
+    setIsCreatingCourse(true);
+
+    const modulesPayload = [
+      {
+        title: newModuleTitle.trim() || 'Module 1: Core Fundamentals & Setup',
+        lessons: [
+          {
+            title: newLessonTitle.trim() || 'Lesson 1: Introduction & Architecture Overview',
+            videoUrl: newVideoUrl.trim() || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+            duration: '15 mins',
+            transcript: newLessonNotes.trim() || 'Welcome to this lesson! Follow the video guide step-by-step.',
+            aiSummary: newLessonNotes.trim() || 'Core architecture concepts, key workflows, and practical applications.'
+          }
+        ]
+      }
+    ];
+
+    try {
+      const res = await api.post('/courses', {
+        title: newTitle.trim(),
+        category: newCategory,
+        price: Number(newPrice) || 0,
+        description: newDesc.trim() || 'Comprehensive training course.',
+        thumbnail: newThumbnail.trim() || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=80',
+        level: newLevel,
+        status: statusToSet,
+        modules: modulesPayload
+      });
+
+      setShowCreateModal(false);
+      alert(`Course "${newTitle}" created & ${statusToSet === 'published' ? 'Published Live to Course Catalog with Lesson Video & Notes! 🚀' : 'Saved to Drafts! 📝'}`);
+      setNewTitle('');
+      setNewDesc('');
+
+      // Refresh instructor dashboard data
+      const statsRes = await api.get('/dashboard/instructor');
+      setInstructorStats(statsRes.data);
+      if (statsRes.data?.courses) {
+        setInstructorCourses(statsRes.data.courses);
+      }
+    } catch (err) {
+      console.error('Create course error:', err);
+      alert('Failed to create course. Please try again.');
+    } finally {
+      setIsCreatingCourse(false);
+    }
   };
 
   const handleGenerateQuiz = async () => {
@@ -320,10 +649,10 @@ const InstructorDashboardPage = () => {
                 </div>
 
                 <button
-                  onClick={() => setShowCreateModal(true)}
-                  style={{ background: '#1e1b4b', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '14px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 6px 18px rgba(30, 27, 75, 0.35)' }}
+                  onClick={() => navigate('/instructor/create-course')}
+                  style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '14px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 6px 18px rgba(99, 102, 241, 0.35)' }}
                 >
-                  <Plus size={18} /> Create New Course
+                  <Plus size={18} /> Open Course Studio 🎓
                 </button>
               </div>
 
@@ -333,36 +662,42 @@ const InstructorDashboardPage = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
                     <div>
                       <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>TOTAL REVENUE</span>
-                      <strong style={{ fontSize: '1.8rem', color: 'var(--text-title)' }}>$42,850.00</strong>
+                      <strong style={{ fontSize: '1.8rem', color: 'var(--text-title)' }}>
+                        ${instructorStats?.totalRevenue ? instructorStats.totalRevenue.toLocaleString() : '0.00'}
+                      </strong>
                     </div>
                     <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#cff4fc', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <DollarSign size={20} />
                     </div>
                   </div>
-                  <span style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 700 }}>↗ +12.5% this month</span>
+                  <span style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 700 }}>Real Platform Revenue</span>
                 </div>
 
                 <div className="glass-card" style={{ padding: '22px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
                     <div>
                       <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>ACTIVE STUDENTS</span>
-                      <strong style={{ fontSize: '1.8rem', color: 'var(--text-title)' }}>1,284</strong>
+                      <strong style={{ fontSize: '1.8rem', color: 'var(--text-title)' }}>
+                        {instructorStats?.totalStudents ?? 0}
+                      </strong>
                     </div>
                     <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#f3e8ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Users size={20} />
                     </div>
                   </div>
-                  <span style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 700 }}>↗ +82 new today</span>
+                  <span style={{ fontSize: '0.78rem', color: '#059669', fontWeight: 700 }}>Enrolled Learners</span>
                 </div>
 
                 <div className="glass-card" style={{ padding: '22px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
                     <div>
-                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>AVERAGE RATING</span>
-                      <strong style={{ fontSize: '1.8rem', color: 'var(--text-title)' }}>4.9</strong>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>PUBLISHED COURSES</span>
+                      <strong style={{ fontSize: '1.8rem', color: 'var(--text-title)' }}>
+                        {instructorStats?.totalCourses ?? instructorCourses.length}
+                      </strong>
                     </div>
                     <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#e0e7ff', color: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Star size={20} />
+                      <BookOpen size={20} />
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: '2px', color: '#f59e0b' }}>
@@ -380,23 +715,33 @@ const InstructorDashboardPage = () => {
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {MY_COURSES_LIST.map((c) => (
-                      <div key={c.id} className="glass-card glass-card-hover" style={{ padding: '18px 22px', display: 'grid', gridTemplateColumns: '110px 1fr 60px', gap: '18px', alignItems: 'center', borderRadius: '16px' }}>
-                        <img src={c.thumbnail} alt={c.title} style={{ width: '100%', height: '75px', objectFit: 'cover', borderRadius: '12px' }} />
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                            <span style={{ padding: '2px 10px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 800, background: c.statusBg, color: c.statusColor }}>{c.status}</span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.updated}</span>
+                    {(instructorCourses.length > 0 ? instructorCourses : MY_COURSES_LIST).map((c, idx) => {
+                      const title = c.title;
+                      const status = (c.status || 'published').toUpperCase();
+                      const statusBg = status === 'PUBLISHED' ? '#dcfce7' : '#f3e8ff';
+                      const statusColor = status === 'PUBLISHED' ? '#15803d' : '#7c3aed';
+                      const studentCount = c.enrolledStudents ? c.enrolledStudents.length : (c.students || 0);
+                      const earnedText = c.price ? `$${(c.price * studentCount).toLocaleString()}` : (c.earned || '$0');
+                      const thumbnail = c.thumbnail || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80';
+
+                      return (
+                        <div key={c._id || c.id || idx} className="glass-card glass-card-hover" style={{ padding: '18px 22px', display: 'grid', gridTemplateColumns: '110px 1fr 60px', gap: '18px', alignItems: 'center', borderRadius: '16px' }}>
+                          <img src={thumbnail} alt={title} style={{ width: '100%', height: '75px', objectFit: 'cover', borderRadius: '12px' }} />
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                              <span style={{ padding: '2px 10px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 800, background: statusBg, color: statusColor }}>{status}</span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{c.category || 'Online Course'}</span>
+                            </div>
+                            <h3 style={{ fontSize: '1rem', color: 'var(--text-title)', marginBottom: '4px' }}>{title}</h3>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{studentCount} Students • {earnedText} Revenue</span>
                           </div>
-                          <h3 style={{ fontSize: '1rem', color: 'var(--text-title)', marginBottom: '4px' }}>{c.title}</h3>
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{c.students} Students • {c.earned} Earned</span>
+                          <div style={{ display: 'flex', gap: '10px', color: 'var(--text-muted)' }}>
+                            <Edit2 size={16} style={{ cursor: 'pointer' }} onClick={() => navigate(`/courses/${c._id || c.id}`)} />
+                            <MoreVertical size={16} style={{ cursor: 'pointer' }} />
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '10px', color: 'var(--text-muted)' }}>
-                          <Edit2 size={16} style={{ cursor: 'pointer' }} />
-                          <MoreVertical size={16} style={{ cursor: 'pointer' }} />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -477,33 +822,52 @@ const InstructorDashboardPage = () => {
               </div>
 
               <button
-                onClick={() => setShowCreateModal(true)}
-                style={{ background: '#1e1b4b', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '14px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                onClick={() => navigate('/instructor/create-course')}
+                style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '14px', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(99,102,241,0.4)' }}
               >
-                <Plus size={18} /> Create New Course
+                <Plus size={18} /> Open Course Studio 🎓
               </button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-              {MY_COURSES_LIST.map((c) => (
-                <div key={c.id} className="glass-card glass-card-hover" style={{ borderRadius: '20px', overflow: 'hidden', padding: '20px' }}>
-                  <img src={c.thumbnail} alt={c.title} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '14px', marginBottom: '16px' }} />
-                  <span className="badge badge-primary" style={{ marginBottom: '10px' }}>{c.category}</span>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-title)', marginBottom: '8px' }}>{c.title}</h3>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                    <span>👥 {c.students} Students</span>
-                    <strong style={{ color: '#059669' }}>{c.earned} Earned</strong>
+              {(instructorCourses.length > 0 ? instructorCourses : MY_COURSES_LIST).map((c, idx) => {
+                const title = c.title;
+                const category = c.category || 'General';
+                const studentCount = c.enrolledStudents ? c.enrolledStudents.length : (c.students || 0);
+                const earnedText = c.price ? `$${(c.price * studentCount).toLocaleString()}` : (c.earned || '$0');
+                const thumbnail = c.thumbnail || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80';
+
+                return (
+                  <div key={c._id || c.id || idx} className="glass-card glass-card-hover" style={{ borderRadius: '20px', overflow: 'hidden', padding: '20px' }}>
+                    <img src={thumbnail} alt={title} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '14px', marginBottom: '16px' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span className="badge badge-primary">{category}</span>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '8px', background: c.status === 'draft' ? '#f3e8ff' : '#dcfce7', color: c.status === 'draft' ? '#7c3aed' : '#15803d' }}>
+                        {(c.status || 'published').toUpperCase()}
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-title)', marginBottom: '8px' }}>{title}</h3>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                      <span>👥 {studentCount} Students</span>
+                      <strong style={{ color: '#059669' }}>{earnedText} Earned</strong>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        onClick={() => handleOpenEditModal(c)}
+                        style={{ flex: 1, background: '#8455ef', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Manage & Edit
+                      </button>
+                      <button
+                        onClick={() => navigate(`/learn/${c._id || c.id}`)}
+                        style={{ background: 'var(--bg-main)', border: '1px solid var(--border-glass)', padding: '10px', borderRadius: '10px', cursor: 'pointer' }}
+                      >
+                        <Eye size={18} />
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button style={{ flex: 1, background: '#8455ef', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}>
-                      Edit Curriculum
-                    </button>
-                    <button style={{ background: 'var(--bg-main)', border: '1px solid var(--border-glass)', padding: '10px', borderRadius: '10px', cursor: 'pointer' }}>
-                      <Eye size={18} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -824,26 +1188,42 @@ const InstructorDashboardPage = () => {
       {/* CREATE NEW COURSE MODAL */}
       {showCreateModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(8px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div className="glass-card" style={{ padding: '36px', width: '100%', maxWidth: '540px' }}>
+          <div className="glass-card" style={{ padding: '32px', width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '1.4rem', color: 'var(--text-title)' }}>Create New Course</h2>
+              <div>
+                <h2 style={{ fontSize: '1.4rem', color: 'var(--text-title)', fontWeight: 800 }}>Create New Course</h2>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Configure course details, upload video files, lesson notes, and custom quizzes.</p>
+              </div>
               <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="var(--text-muted)" /></button>
             </div>
 
-            <form onSubmit={handleCreateCourse} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={(e) => { e.preventDefault(); handleCreateCourse('published'); }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* Basic Details */}
               <div>
                 <label className="form-label">Course Title</label>
-                <input type="text" className="form-input" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
+                <input type="text" className="form-input" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g. Mastering Web Development with React & AI" required />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                 <div>
                   <label className="form-label">Category</label>
                   <select className="form-input" value={newCategory} onChange={(e) => setNewCategory(e.target.value)}>
                     <option value="Web Development">Web Development</option>
                     <option value="Data Science">Data Science</option>
                     <option value="Design">Design</option>
-                    <option value="AI & Machine Learning">AI & Machine Learning</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Cloud Computing">Cloud Computing</option>
+                    <option value="Business">Business</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label">Level</label>
+                  <select className="form-input" value={newLevel} onChange={(e) => setNewLevel(e.target.value)}>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
                   </select>
                 </div>
 
@@ -854,15 +1234,429 @@ const InstructorDashboardPage = () => {
               </div>
 
               <div>
-                <label className="form-label">Description</label>
-                <textarea className="form-input" rows={3} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} required />
+                <label className="form-label">Course Description</label>
+                <textarea className="form-input" rows={2} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} placeholder="Brief course overview and curriculum goals..." required />
+              </div>
+
+              {/* Thumbnail Image URL & File Upload */}
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-glass)' }}>
+                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Course Thumbnail Cover</span>
+                  <span style={{ fontSize: '0.72rem', color: '#6366f1' }}>📁 Upload Image File or Enter URL</span>
+                </label>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: '12px', alignItems: 'center' }}>
+                  <input type="text" className="form-input" value={newThumbnail} onChange={(e) => setNewThumbnail(e.target.value)} placeholder="https://... or upload file below" required />
+                  <img src={newThumbnail} alt="Preview" style={{ width: '100%', height: '50px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-glass)' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
+                  <label style={{ background: '#6366f1', color: '#ffffff', padding: '6px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span>📷 Choose Image File</span>
+                    <input type="file" accept="image/*" onChange={(e) => handleImageFileUpload(e, false)} style={{ display: 'none' }} />
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Supported: JPG, PNG, WEBP</span>
+                </div>
+              </div>
+
+              {/* Curriculum, Video File & Lesson Notes Section */}
+              <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '14px', marginTop: '4px' }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#6366f1', marginBottom: '10px' }}>📖 Module, Video Upload & Lesson Notes</h4>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'rgba(99,102,241,0.04)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(99,102,241,0.15)' }}>
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.78rem' }}>Module Title</label>
+                    <input type="text" className="form-input" value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} required />
+                  </div>
+
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.78rem' }}>Lesson 1 Title</label>
+                    <input type="text" className="form-input" value={newLessonTitle} onChange={(e) => setNewLessonTitle(e.target.value)} required />
+                  </div>
+
+                  {/* Video Upload Field */}
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.78rem' }}>Lesson Video File / MP4 Stream URL</label>
+                    <input type="text" className="form-input" value={newVideoUrl.startsWith('data:') ? '[Uploaded Local Video MP4 File]' : newVideoUrl} onChange={(e) => setNewVideoUrl(e.target.value)} required />
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '8px' }}>
+                      <label style={{ background: '#059669', color: '#ffffff', padding: '6px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>🎥 Upload Video MP4 File</span>
+                        <input type="file" accept="video/*" onChange={(e) => handleVideoFileUpload(e, false)} style={{ display: 'none' }} />
+                      </label>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Direct device MP4/WebM video upload supported</span>
+                    </div>
+                  </div>
+
+                  {/* Notes File Upload Field */}
+                  <div>
+                    <label className="form-label" style={{ fontSize: '0.78rem' }}>Lesson Notes & Summary Text</label>
+                    <textarea className="form-input" rows={2} value={newLessonNotes} onChange={(e) => setNewLessonNotes(e.target.value)} placeholder="Type notes or upload a text/document file below..." required />
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '8px' }}>
+                      <label style={{ background: '#8b5cf6', color: '#ffffff', padding: '6px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                        <span>📄 Upload Notes File (PDF / TXT)</span>
+                        <input type="file" accept=".txt,.pdf,.doc,.docx" onChange={(e) => handleNotesFileUpload(e, false)} style={{ display: 'none' }} />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic Interactive Quiz Builder Section */}
+              <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '14px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#10b981' }}>🧪 Lesson Quiz Question Builder</h4>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Add multiple choice questions for students</span>
+                  </div>
+                  <button type="button" onClick={handleAddQuizQuestion} style={{ background: '#10b981', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>
+                    + Add Quiz Question
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {newQuizQuestions.map((q, qIdx) => (
+                    <div key={qIdx} style={{ background: 'rgba(16,185,129,0.04)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(16,185,129,0.2)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <strong style={{ fontSize: '0.82rem', color: 'var(--text-title)' }}>Question #{qIdx + 1}</strong>
+                        {newQuizQuestions.length > 1 && (
+                          <button type="button" onClick={() => handleRemoveQuizQuestion(qIdx)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>
+                            Remove Question ✕
+                          </button>
+                        )}
+                      </div>
+
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="Enter Question (e.g., What is gradient descent?)"
+                        value={q.question}
+                        onChange={(e) => handleUpdateQuizQuestion(qIdx, 'question', e.target.value)}
+                        style={{ marginBottom: '10px' }}
+                      />
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                        {['A', 'B', 'C', 'D'].map((optLabel, optIdx) => (
+                          <div key={optIdx} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{
+                              background: q.correctIndex === optIdx ? '#10b981' : 'rgba(99,102,241,0.12)',
+                              color: q.correctIndex === optIdx ? '#ffffff' : '#6366f1',
+                              fontWeight: 800,
+                              fontSize: '0.78rem',
+                              padding: '6px 10px',
+                              borderRadius: '8px',
+                              minWidth: '76px',
+                              textAlign: 'center',
+                              flexShrink: 0
+                            }}>
+                              Option {optLabel}
+                            </span>
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder={`Type Choice ${optLabel}`}
+                              value={q.options[optIdx] || ''}
+                              onChange={(e) => handleUpdateQuizQuestion(qIdx, 'option', e.target.value, optIdx)}
+                              style={{ fontSize: '0.8rem', flex: 1 }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.78rem' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--text-title)' }}>Correct Option:</span>
+                        <select
+                          className="form-input"
+                          style={{ width: 'auto', padding: '4px 10px', fontSize: '0.78rem' }}
+                          value={q.correctIndex}
+                          onChange={(e) => handleUpdateQuizQuestion(qIdx, 'correctIndex', e.target.value)}
+                        >
+                          <option value={0}>Option A</option>
+                          <option value={1}>Option B</option>
+                          <option value={2}>Option C</option>
+                          <option value={3}>Option D</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  disabled={isCreatingCourse}
+                  onClick={() => handleCreateCourse('published')}
+                  className="btn-primary"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Publish Live 🚀
+                </button>
+                <button
+                  type="button"
+                  disabled={isCreatingCourse}
+                  onClick={() => handleCreateCourse('draft')}
+                  className="btn-secondary"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  Save as Draft 📝
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT COURSE MODAL */}
+      {showEditModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.7)', backdropFilter: 'blur(8px)', zIndex: 150, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div className="glass-card" style={{ padding: '32px', width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.4rem', color: 'var(--text-title)', fontWeight: 800 }}>Manage & Edit Course</h2>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Update course details, upload video files, and lesson notes.</p>
+              </div>
+              <button onClick={() => setShowEditModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} color="var(--text-muted)" /></button>
+            </div>
+
+            <form onSubmit={handleSaveEditCourse} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label className="form-label">Course Title</label>
+                <input type="text" className="form-input" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label className="form-label">Category</label>
+                  <select className="form-input" value={editCategory} onChange={(e) => setEditCategory(e.target.value)}>
+                    <option value="Web Development">Web Development</option>
+                    <option value="Data Science">Data Science</option>
+                    <option value="Design">Design</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Cloud Computing">Cloud Computing</option>
+                    <option value="Business">Business</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label">Level</label>
+                  <select className="form-input" value={editLevel} onChange={(e) => setEditLevel(e.target.value)}>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label">Price ($ USD)</label>
+                  <input type="number" step="0.01" className="form-input" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} required />
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label">Course Description</label>
+                <textarea className="form-input" rows={2} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} required />
+              </div>
+
+              {/* Thumbnail Image URL & File Upload */}
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-glass)' }}>
+                <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Course Thumbnail Cover</span>
+                  <span style={{ fontSize: '0.72rem', color: '#6366f1' }}>📁 Upload Image File or Enter URL</span>
+                </label>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: '12px', alignItems: 'center' }}>
+                  <input type="text" className="form-input" value={editThumbnail} onChange={(e) => setEditThumbnail(e.target.value)} required />
+                  <img src={editThumbnail} alt="Preview" style={{ width: '100%', height: '50px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-glass)' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: '10px' }}>
+                  <label style={{ background: '#6366f1', color: '#ffffff', padding: '6px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span>📷 Upload New Cover Image File</span>
+                    <input type="file" accept="image/*" onChange={(e) => handleImageFileUpload(e, true)} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              </div>
+
+              {/* Curriculum & Multi-Module / Multi-Lesson Builder Section */}
+              <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '14px', marginTop: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#6366f1' }}>📖 Modules & Video Lessons Builder</h4>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleAddEditModule(1)}
+                      style={{ background: '#6366f1', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      + 1 Module
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddEditModule(3)}
+                      style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      ⚡ + 3 Modules
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddEditModule(5)}
+                      style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      🚀 + 5 Modules
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const input = prompt('How many modules would you like to add to this course?', '10');
+                        const num = parseInt(input, 10);
+                        if (num && num > 0) {
+                          handleAddEditModule(num);
+                        }
+                      }}
+                      style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      ➕ Custom Count (e.g. 10)
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  {editModules.map((mod, modIdx) => (
+                    <div key={mod.id || modIdx} style={{ background: 'rgba(99,102,241,0.04)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(99,102,241,0.15)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <strong style={{ fontSize: '0.85rem', color: '#6366f1' }}>Module #{modIdx + 1}</strong>
+                        {editModules.length > 1 && (
+                          <button type="button" onClick={() => handleRemoveEditModule(modIdx)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 700 }}>
+                            Remove Module ✕
+                          </button>
+                        )}
+                      </div>
+
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={mod.title}
+                        onChange={(e) => {
+                          const updated = [...editModules];
+                          updated[modIdx].title = e.target.value;
+                          setEditModules(updated);
+                        }}
+                        placeholder="Module Title"
+                        style={{ marginBottom: '12px', fontWeight: 700 }}
+                        required
+                      />
+
+                      {/* Lessons inside Module */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginLeft: '8px' }}>
+                        {mod.lessons.map((les, lesIdx) => (
+                          <div key={les.id || lesIdx} style={{ background: 'var(--bg-main)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-glass)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-title)' }}>🎬 Lesson #{lesIdx + 1}</span>
+                              {mod.lessons.length > 1 && (
+                                <button type="button" onClick={() => handleRemoveEditLesson(modIdx, lesIdx)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 700 }}>
+                                  Delete Lesson ✕
+                                </button>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px', gap: '8px', marginBottom: '8px' }}>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Lesson Title"
+                                value={les.title}
+                                onChange={(e) => handleEditLessonChange(modIdx, lesIdx, 'title', e.target.value)}
+                                style={{ fontSize: '0.8rem' }}
+                                required
+                              />
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Duration (e.g. 15 mins)"
+                                value={les.duration}
+                                onChange={(e) => handleEditLessonChange(modIdx, lesIdx, 'duration', e.target.value)}
+                                style={{ fontSize: '0.8rem' }}
+                              />
+                            </div>
+
+                            <input
+                              type="text"
+                              className="form-input"
+                              placeholder="Video MP4 Stream / Upload URL"
+                              value={les.videoUrl.startsWith('data:') ? '[Uploaded Local MP4 Video File]' : les.videoUrl}
+                              onChange={(e) => handleEditLessonChange(modIdx, lesIdx, 'videoUrl', e.target.value)}
+                              style={{ fontSize: '0.8rem', marginBottom: '8px' }}
+                              required
+                            />
+
+                            <textarea
+                              className="form-input"
+                              rows={2}
+                              placeholder="Lesson Notes & Key Takeaways"
+                              value={les.notes}
+                              onChange={(e) => handleEditLessonChange(modIdx, lesIdx, 'notes', e.target.value)}
+                              style={{ fontSize: '0.8rem' }}
+                              required
+                            />
+                          </div>
+                        ))}
+
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleAddEditLesson(modIdx, 1)}
+                            style={{ background: 'var(--bg-main)', color: '#6366f1', border: '1px dashed #6366f1', padding: '6px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            + 1 Lesson
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddEditLesson(modIdx, 5)}
+                            style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            ⚡ + 5 Lessons
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddEditLesson(modIdx, 10)}
+                            style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            🚀 + 10 Lessons
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const input = prompt('How many lessons would you like to add to this module?', '15');
+                              const num = parseInt(input, 10);
+                              if (num && num > 0) {
+                                handleAddEditLesson(modIdx, num);
+                              }
+                            }}
+                            style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            ➕ Custom Count (e.g. 15, 20)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>
-                  Create & Save Draft
+                <button
+                  type="submit"
+                  disabled={isUpdatingCourse}
+                  className="btn-primary"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                >
+                  {isUpdatingCourse ? 'Updating...' : 'Save & Update Course 🚀'}
                 </button>
-                <button type="button" onClick={() => setShowCreateModal(false)} className="btn-secondary">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="btn-secondary"
+                >
                   Cancel
                 </button>
               </div>

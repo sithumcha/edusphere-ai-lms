@@ -29,6 +29,12 @@ const ratingSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+const quizSchema = new mongoose.Schema({
+  question: { type: String, required: true },
+  options: [{ type: String }],
+  correctIndex: { type: Number, default: 0 }
+});
+
 const courseSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
@@ -41,6 +47,7 @@ const courseSchema = new mongoose.Schema(
     price: { type: Number, default: 0 },
     status: { type: String, enum: ['draft', 'pending', 'published'], default: 'published' },
     modules: [moduleSchema],
+    quizzes: [quizSchema],
     enrolledStudents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     ratings: [ratingSchema],
     averageRating: { type: Number, default: 4.8 },

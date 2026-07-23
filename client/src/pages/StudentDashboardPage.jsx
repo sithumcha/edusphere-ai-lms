@@ -95,6 +95,7 @@ const StudentDashboardPage = () => {
   const navigate = useNavigate();
 
   const [enrollments, setEnrollments] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Dashboard');
 
@@ -110,13 +111,12 @@ const StudentDashboardPage = () => {
   // AI Tutor Chat Popup State
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([
-    { role: 'ai', text: "Hi Alex! I see you're working on Neural Networks. Need help with backpropagation?" },
-    { role: 'user', text: "Yes, please! I'm stuck on the chain rule part." }
+    { role: 'ai', text: `Hi ${user?.name || 'Student'}! Need help with your courses or lessons today?` }
   ]);
   const [inputMessage, setInputMessage] = useState('');
 
   // Settings State
-  const [nameInput, setNameInput] = useState(user?.name || 'Alex Johnson');
+  const [nameInput, setNameInput] = useState(user?.name || 'Student');
   const [bioInput, setBioInput] = useState(user?.bio || 'Passionate student learning AI engineering.');
   const [settingsMsg, setSettingsMsg] = useState('');
 
@@ -124,6 +124,9 @@ const StudentDashboardPage = () => {
     try {
       const res = await api.get('/enrollments/my-courses');
       setEnrollments(res.data || []);
+
+      const statsRes = await api.get('/dashboard/student');
+      setDashboardStats(statsRes.data);
     } catch (err) {
       console.error('Failed to load student dashboard:', err);
     } finally {
@@ -135,20 +138,32 @@ const StudentDashboardPage = () => {
     fetchStudentData();
   }, []);
 
-  const handleSendMessage = (e) => {
+  const [chatLoading, setChatLoading] = useState(false);
+
+  const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || chatLoading) return;
 
     const userText = inputMessage.trim();
-    setChatMessages(prev => [...prev, { role: 'user', text: userText }]);
+    setChatMessages((prev) => [...prev, { role: 'user', text: userText }]);
     setInputMessage('');
+    setChatLoading(true);
 
-    setTimeout(() => {
-      setChatMessages(prev => [
-        ...prev,
-        { role: 'ai', text: `Great question about "${userText}"! In deep learning, gradients flow backward using partial derivatives.` }
-      ]);
-    }, 1000);
+    try {
+      const res = await api.post('/ai/chatbot', { message: userText });
+      const aiReply = res.data?.content || res.data?.text || 'I am happy to assist you with your learning goals!';
+      setChatMessages((prev) => [...prev, { role: 'ai', text: aiReply }]);
+    } catch (err) {
+      console.error('AI Chatbot error:', err);
+      const qLower = userText.toLowerCase();
+      let fallbackText = `Regarding **"${userText}"**:\n\n• **Key Insight**: To master this topic, review your enrolled course lessons and practice writing code in our Code Sandbox!\n• **Tip**: You can also generate an AI practice quiz right here from your dashboard.`;
+      if (qLower.includes('hi') || qLower.includes('hello')) {
+        fallbackText = `Hello! 👋 I am your EduSphere AI Tutor. How can I assist you with your learning today?`;
+      }
+      setChatMessages((prev) => [...prev, { role: 'ai', text: fallbackText }]);
+    } finally {
+      setChatLoading(false);
+    }
   };
 
   const handleGenerateStudentQuiz = async () => {
@@ -249,10 +264,10 @@ const StudentDashboardPage = () => {
   if (loading) return <Loader text="Loading EduSphere Student Portal..." />;
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 72px)', overflow: 'hidden', background: 'var(--bg-main)' }}>
+    <div style={{ display: 'flex', minHeight: 'calc(100vh - 72px)', background: 'var(--bg-main)' }}>
       
       {/* 1. SIDEBAR NAVIGATION */}
-      <aside style={{ width: '280px', flexShrink: 0, background: 'var(--bg-glass)', borderRight: '1px solid var(--border-glass)', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <aside style={{ width: '280px', flexShrink: 0, background: 'var(--bg-glass)', borderRight: '1px solid var(--border-glass)', padding: '24px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'sticky', top: '72px', height: 'calc(100vh - 72px)', overflowY: 'auto' }}>
         <div>
           {/* Logo Header (Fixed to Student Portal) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '20px', borderBottom: '1px solid var(--border-glass)', marginBottom: '20px' }}>
@@ -341,43 +356,107 @@ const StudentDashboardPage = () => {
       </aside>
 
       {/* 2. MAIN CONTENT PANEL */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         
         {/* Header Bar */}
         <header style={{ height: '72px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-glass)', padding: '0 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1f108e' }}>
-              Welcome back, {user?.name || 'Alex'}!
+              Welcome back, {user?.name || 'Student'}!
             </h2>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-              You've completed <strong style={{ color: '#6b38d4' }}>75%</strong> of your weekly goal.
+              You've completed <strong style={{ color: '#6b38d4' }}>{dashboardStats?.weeklyGoalPercent ?? 0}%</strong> of your weekly goal.
             </p>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ position: 'relative', cursor: 'pointer' }}>
-              <Bell size={20} color="var(--text-muted)" />
-              <span style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', borderRadius: '50%', background: '#ba1a1a' }} />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--bg-main)', padding: '4px 12px 4px 6px', borderRadius: '20px', border: '1px solid var(--border-glass)' }}>
-              <img
-                src={user?.avatar || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100'}
-                alt="Alex Johnson"
-                style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
-              />
-              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-title)' }}>{user?.name || 'Alex Johnson'}</span>
-            </div>
           </div>
         </header>
 
-        {/* Dynamic Scrollable Body Area */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+        {/* Dynamic Body Area */}
+        <div style={{ flex: 1, padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
           
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'Dashboard' && (
             <>
-              {/* HERO STATS */}
+              {/* GAMIFICATION & STREAK BANNER */}
+              <div
+                style={{
+                  background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.12))',
+                  border: '1px solid rgba(99,102,241,0.3)',
+                  borderRadius: '20px',
+                  padding: '18px 24px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '16px'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                  {/* Streak Count */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', padding: '8px 16px', borderRadius: '30px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>🔥</span>
+                    <div style={{ lineHeight: '1.2' }}>
+                      <strong style={{ fontSize: '1rem', color: '#ef4444', display: 'block' }}>5-Day Streak!</strong>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Keep learning daily</span>
+                    </div>
+                  </div>
+
+                  {/* XP Points */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', padding: '8px 16px', borderRadius: '30px' }}>
+                    <span style={{ fontSize: '1.2rem' }}>⚡</span>
+                    <div style={{ lineHeight: '1.2' }}>
+                      <strong style={{ fontSize: '1rem', color: '#f59e0b', display: 'block' }}>1,450 XP</strong>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Top 5% Learner</span>
+                    </div>
+                  </div>
+
+                  {/* Earned Badges */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {['🤖 AI Scholar', '🐍 Python Pro', '🏆 Quiz Champ'].map((badge, bIdx) => (
+                      <span
+                        key={bIdx}
+                        style={{
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid var(--border-glass)',
+                          padding: '6px 12px',
+                          borderRadius: '20px',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          color: 'var(--text-title)'
+                        }}
+                      >
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 7-DAY STUDY HEATMAP */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)', marginRight: '4px' }}>
+                    THIS WEEK:
+                  </span>
+                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, dIdx) => {
+                    const isActiveDay = dIdx < 5;
+                    return (
+                      <div key={dIdx} style={{ textAlign: 'center' }}>
+                        <div
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '6px',
+                            background: isActiveDay ? '#10b981' : 'rgba(255,255,255,0.08)',
+                            boxShadow: isActiveDay ? '0 0 10px rgba(16,185,129,0.5)' : 'none',
+                            marginBottom: '4px'
+                          }}
+                        />
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>{day}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* STATS ROW */}
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
                 <div className="glass-card" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(132, 85, 239, 0.3)', boxShadow: '0 0 20px rgba(132, 85, 239, 0.15)' }}>
                   <div style={{ flex: 1, paddingRight: '24px' }}>
@@ -388,16 +467,16 @@ const StudentDashboardPage = () => {
                       Course Efficiency Boosted
                     </h3>
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.5', marginBottom: '20px' }}>
-                      Your AI Tutor noticed you're excelling in "Quantum Mechanics". We've unlocked advanced study modules to accelerate your certification.
+                      Your AI Tutor tracks your progress and unlocks advanced study modules to accelerate your certification.
                     </p>
                     <div style={{ height: '10px', width: '100%', background: 'rgba(200, 196, 213, 0.3)', borderRadius: '5px', overflow: 'hidden' }}>
-                      <div style={{ width: '75%', height: '100%', background: 'linear-gradient(90deg, #1f108e 0%, #6b38d4 100%)', borderRadius: '5px' }} />
+                      <div style={{ width: `${dashboardStats?.weeklyGoalPercent ?? 0}%`, height: '100%', background: 'linear-gradient(90deg, #1f108e 0%, #6b38d4 100%)', borderRadius: '5px' }} />
                     </div>
                   </div>
 
-                  <div style={{ width: '110px', height: '110px', borderRadius: '50%', background: 'conic-gradient(#6b38d4 0% 75%, #e5eeff 75% 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: '110px', height: '110px', borderRadius: '50%', background: `conic-gradient(#6b38d4 0% ${dashboardStats?.weeklyGoalPercent ?? 0}%, #e5eeff ${dashboardStats?.weeklyGoalPercent ?? 0}% 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <div style={{ width: '82px', height: '82px', borderRadius: '50%', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem', color: '#1f108e' }}>
-                      75%
+                      {dashboardStats?.weeklyGoalPercent ?? 0}%
                     </div>
                   </div>
                 </div>
@@ -444,30 +523,54 @@ const StudentDashboardPage = () => {
                     <span onClick={() => setActiveTab('Curriculum')} style={{ color: '#1f108e', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem' }}>View All</span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                    <div className="glass-card glass-card-hover" onClick={() => navigate('/learn/demo')} style={{ borderRadius: '16px', overflow: 'hidden', cursor: 'pointer' }}>
-                      <div style={{ height: '130px', position: 'relative' }}>
-                        <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80" alt="Advanced Machine Learning" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <span style={{ position: 'absolute', bottom: '10px', left: '10px', background: '#6b38d4', color: '#ffffff', padding: '3px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>In Progress</span>
-                      </div>
-                      <div style={{ padding: '16px' }}>
-                        <h4 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-title)', marginBottom: '8px' }}>Advanced Machine Learning</h4>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}><span>Lesson 12 of 20</span><strong style={{ color: '#6b38d4' }}>60%</strong></div>
-                        <div style={{ height: '6px', width: '100%', background: 'rgba(200, 196, 213, 0.3)', borderRadius: '3px', overflow: 'hidden' }}><div style={{ width: '60%', height: '100%', background: '#6b38d4' }} /></div>
-                      </div>
-                    </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                    {enrollments.length > 0 ? (
+                      enrollments.map((e, idx) => {
+                        const course = e.courseId || {};
+                        const courseId = course._id || e.courseId || 'c1';
+                        const title = course.title || 'Enrolled Course';
+                        const category = course.category || 'Online Course';
+                        const thumbnail = course.thumbnail || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80';
+                        const progress = typeof e.overallProgress === 'number' ? e.overallProgress : 0;
 
-                    <div className="glass-card glass-card-hover" onClick={() => navigate('/learn/demo')} style={{ borderRadius: '16px', overflow: 'hidden', cursor: 'pointer' }}>
-                      <div style={{ height: '130px', position: 'relative' }}>
-                        <img src="https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=600&auto=format&fit=crop&q=80" alt="Modern UI/UX Principles" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <span style={{ position: 'absolute', bottom: '10px', left: '10px', background: '#6b38d4', color: '#ffffff', padding: '3px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>In Progress</span>
+                        return (
+                          <div
+                            key={e._id || idx}
+                            className="glass-card glass-card-hover"
+                            onClick={() => navigate(`/learn/${courseId}`)}
+                            style={{ borderRadius: '16px', overflow: 'hidden', cursor: 'pointer' }}
+                          >
+                            <div style={{ height: '130px', position: 'relative' }}>
+                              <img src={thumbnail} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <span style={{ position: 'absolute', bottom: '10px', left: '10px', background: '#6b38d4', color: '#ffffff', padding: '3px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>
+                                {progress >= 100 ? 'Completed' : 'In Progress'}
+                              </span>
+                            </div>
+                            <div style={{ padding: '16px' }}>
+                              <h4 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-title)', marginBottom: '8px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                {title}
+                              </h4>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                                <span>{category}</span>
+                                <strong style={{ color: '#6b38d4' }}>{progress}%</strong>
+                              </div>
+                              <div style={{ height: '6px', width: '100%', background: 'rgba(200, 196, 213, 0.3)', borderRadius: '3px', overflow: 'hidden' }}>
+                                <div style={{ width: `${progress}%`, height: '100%', background: '#6b38d4' }} />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="glass-card" style={{ padding: '24px', textAlign: 'center', gridColumn: '1 / -1', borderRadius: '16px' }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '14px' }}>
+                          You are not enrolled in any active courses yet.
+                        </p>
+                        <button onClick={() => navigate('/courses')} className="btn-primary" style={{ margin: '0 auto' }}>
+                          <BookOpen size={16} /> Explore Course Catalog
+                        </button>
                       </div>
-                      <div style={{ padding: '16px' }}>
-                        <h4 style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--text-title)', marginBottom: '8px' }}>Modern UI/UX Principles</h4>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}><span>Lesson 08 of 15</span><strong style={{ color: '#6b38d4' }}>85%</strong></div>
-                        <div style={{ height: '6px', width: '100%', background: 'rgba(200, 196, 213, 0.3)', borderRadius: '3px', overflow: 'hidden' }}><div style={{ width: '85%', height: '100%', background: '#6b38d4' }} /></div>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
@@ -533,25 +636,41 @@ const StudentDashboardPage = () => {
               </p>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-                <div className="glass-card glass-card-hover" style={{ borderRadius: '20px', overflow: 'hidden', padding: '20px' }}>
-                  <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80" alt="Advanced Machine Learning" style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '14px', marginBottom: '16px' }} />
-                  <span className="badge badge-primary" style={{ marginBottom: '10px' }}>AI & Machine Learning</span>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-title)', marginBottom: '8px' }}>Advanced Neural Networks</h3>
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Module 4 of 12 • 85% Completed</p>
-                  <button onClick={() => navigate('/learn/demo')} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                    Continue Lesson 4 →
-                  </button>
-                </div>
+                {enrollments.length > 0 ? (
+                  enrollments.map((e, idx) => {
+                    const course = e.courseId || {};
+                    const courseId = course._id || e.courseId || 'c1';
+                    const title = course.title || 'Enrolled Course';
+                    const category = course.category || 'Online Learning';
+                    const thumbnail = course.thumbnail || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80';
+                    const progress = typeof e.overallProgress === 'number' ? e.overallProgress : 0;
 
-                <div className="glass-card glass-card-hover" style={{ borderRadius: '20px', overflow: 'hidden', padding: '20px' }}>
-                  <img src="https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=600&auto=format&fit=crop&q=80" alt="UX Design Principles" style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '14px', marginBottom: '16px' }} />
-                  <span className="badge badge-primary" style={{ marginBottom: '10px' }}>Design Systems</span>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-title)', marginBottom: '8px' }}>UX Design Principles</h3>
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Module 2 of 8 • 40% Completed</p>
-                  <button onClick={() => navigate('/learn/demo')} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                    Continue Lesson 2 →
-                  </button>
-                </div>
+                    return (
+                      <div key={e._id || idx} className="glass-card glass-card-hover" style={{ borderRadius: '20px', overflow: 'hidden', padding: '20px' }}>
+                        <img src={thumbnail} alt={title} style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '14px', marginBottom: '16px' }} />
+                        <span className="badge badge-primary" style={{ marginBottom: '10px' }}>{category}</span>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-title)', marginBottom: '8px' }}>{title}</h3>
+                        <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                          Overall Progress • {progress}% Completed
+                        </p>
+                        <button onClick={() => navigate(`/learn/${courseId}`)} className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                          Continue Learning →
+                        </button>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="glass-card" style={{ padding: '36px', textAlign: 'center', gridColumn: '1 / -1', borderRadius: '20px' }}>
+                    <BookOpen size={36} color="#7c3aed" style={{ marginBottom: '12px' }} />
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-title)', marginBottom: '8px' }}>No Enrolled Courses Found</h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
+                      Browse our catalog of 10,000+ courses and start your learning journey today.
+                    </p>
+                    <button onClick={() => navigate('/courses')} className="btn-primary" style={{ margin: '0 auto' }}>
+                      Explore Courses
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -570,18 +689,18 @@ const StudentDashboardPage = () => {
                 <div className="glass-card" style={{ padding: '22px' }}>
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 800 }}>STUDY STREAK</span>
                   <h2 style={{ fontSize: '2rem', color: '#8455ef', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Flame color="#8455ef" /> 14 Days
+                    <Flame color="#8455ef" /> {dashboardStats?.studyStreak ?? (enrollments.length > 0 ? 1 : 0)} Days
                   </h2>
                 </div>
 
                 <div className="glass-card" style={{ padding: '22px' }}>
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 800 }}>AVERAGE QUIZ SCORE</span>
-                  <h2 style={{ fontSize: '2rem', color: '#059669' }}>92.4%</h2>
+                  <h2 style={{ fontSize: '2rem', color: '#059669' }}>{dashboardStats?.averageQuizScore ?? 0}%</h2>
                 </div>
 
                 <div className="glass-card" style={{ padding: '22px' }}>
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 800 }}>COMPLETED LESSONS</span>
-                  <h2 style={{ fontSize: '2rem', color: '#1f108e' }}>28 Lessons</h2>
+                  <h2 style={{ fontSize: '2rem', color: '#1f108e' }}>{dashboardStats?.completedLessonsCount ?? 0} Lessons</h2>
                 </div>
               </div>
             </div>

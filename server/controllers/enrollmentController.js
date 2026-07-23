@@ -1,7 +1,17 @@
+const mongoose = require('mongoose');
 const Enrollment = require('../models/Enrollment');
 const Course = require('../models/Course');
 const User = require('../models/User');
 const Certificate = require('../models/Certificate');
+
+// Sample Course Title Mapping
+const SAMPLE_MAP = {
+  c1: { title: 'Python for Financial Analysis & Algorithmic Trading', category: 'Data Science', thumbnail: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80' },
+  c2: { title: 'Advanced Design Systems: Scale Your UI Workflow', category: 'Design', thumbnail: 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=600&auto=format&fit=crop&q=80' },
+  c3: { title: 'AWS Certified Solutions Architect Associate 2024', category: 'Cloud Computing', thumbnail: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&auto=format&fit=crop&q=80' },
+  c4: { title: 'Strategic MBA Essentials: Business Strategy & Execution', category: 'Business', thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80' },
+  'banner-genai': { title: 'Mastering Generative AI for Creative Professionals', category: 'AI ENHANCED', thumbnail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80' }
+};
 
 // @desc Enroll student in course
 // @route POST /api/enrollments/:courseId
@@ -10,33 +20,67 @@ const enrollInCourse = async (req, res) => {
     const { courseId } = req.params;
     const studentId = req.user._id;
 
-    const course = await Course.findById(courseId);
-    if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
+    let course = null;
+    if (mongoose.Types.ObjectId.isValid(courseId)) {
+      course = await Course.findById(courseId);
     }
 
-    let enrollment = await Enrollment.findOne({ studentId, courseId });
+    if (!course) {
+      // Find by title or create sample course on the fly
+      const sampleInfo = SAMPLE_MAP[courseId] || {
+        title: `Interactive Course (${courseId})`,
+        category: 'Computer Science',
+        thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=600&auto=format&fit=crop&q=80'
+      };
+
+      course = await Course.findOne({ title: sampleInfo.title });
+      if (!course) {
+        course = await Course.create({
+          title: sampleInfo.title,
+          category: sampleInfo.category,
+          thumbnail: sampleInfo.thumbnail,
+          description: 'Comprehensive interactive course module covering industry standards and practical hands-on projects.',
+          instructorName: 'EduSphere Senior AI Specialist',
+          price: 49.99,
+          level: 'Intermediate',
+          status: 'published',
+          modules: [
+            {
+              title: 'Module 1: Foundations & Architecture',
+              lessons: [
+                { title: '1. Course Overview & Introduction', duration: '12:40', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4' },
+                { title: '2. Core Principles & Logic', duration: '18:15', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4' }
+              ]
+            }
+          ]
+        });
+      }
+    }
+
+    const targetCourseId = course._id;
+
+    let enrollment = await Enrollment.findOne({ studentId, courseId: targetCourseId });
     if (!enrollment) {
       enrollment = await Enrollment.create({
         studentId,
-        courseId,
+        courseId: targetCourseId,
         progress: [],
         overallProgress: 0
       });
 
-      // Push to Course & User schemas
       if (!course.enrolledStudents.includes(studentId)) {
         course.enrolledStudents.push(studentId);
         await course.save();
       }
 
       await User.findByIdAndUpdate(studentId, {
-        $addToSet: { enrolledCourses: courseId }
+        $addToSet: { enrolledCourses: targetCourseId }
       });
     }
 
     res.status(200).json({ message: 'Enrolled successfully', enrollment });
   } catch (error) {
+    console.error('Enrollment controller error:', error);
     res.status(500).json({ message: error.message });
   }
 };
