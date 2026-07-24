@@ -723,10 +723,26 @@ const CourseLearningPage = () => {
       {/* 3. RIGHT AI ASSISTANT & NOTES SIDEBAR */}
       <aside style={{ background: 'var(--bg-glass)', borderLeft: '1px solid var(--border-glass)', padding: '24px 16px', overflowY: 'auto' }}>
         
+        {/* AI Co-Learner Partner Widget Header */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15))', border: '1px solid rgba(99, 102, 241, 0.3)', borderRadius: '18px', padding: '14px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', fontSize: '1.2rem', boxShadow: '0 4px 14px rgba(99,102,241,0.4)', flexShrink: 0 }}>
+            🤖
+          </div>
+          <div>
+            <strong style={{ fontSize: '0.85rem', color: 'var(--text-title)', display: 'block', marginBottom: '2px' }}>
+              AI Co-Learner: Maya ✨
+            </strong>
+            <span style={{ fontSize: '0.74rem', color: '#10b981', fontWeight: 700 }}>
+              ● Online • Studying {currentLesson.title}
+            </span>
+          </div>
+        </div>
+
         {/* Right Navigation Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-glass)', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-glass)', marginBottom: '20px', overflowX: 'auto' }}>
           {[
             { id: 'summary', label: 'AI Summary' },
+            { id: 'cards', label: '📝 Flashcards' },
             { id: 'tutor', label: 'AI Tutor' },
             { id: 'notes', label: 'Notes' },
             { id: 'quiz', label: 'Quiz 🧪' }
@@ -736,14 +752,15 @@ const CourseLearningPage = () => {
               onClick={() => setActiveRightTab(tab.id)}
               style={{
                 flex: 1,
-                padding: '10px 0',
+                padding: '10px 6px',
                 background: 'none',
                 border: 'none',
                 borderBottom: activeRightTab === tab.id ? '2px solid #7c3aed' : '2px solid transparent',
                 color: activeRightTab === tab.id ? '#7c3aed' : 'var(--text-muted)',
                 fontWeight: activeRightTab === tab.id ? 800 : 600,
-                fontSize: '0.85rem',
-                cursor: 'pointer'
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               {tab.label}
@@ -832,6 +849,49 @@ const CourseLearningPage = () => {
                   </span>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: AI FLASHCARDS & MIND MAP */}
+        {activeRightTab === 'cards' && (
+          <div>
+            <div style={{ marginBottom: '16px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                AUTOMATED STUDY CARDS (CLICK TO FLIP)
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {[
+                { q: 'What is the primary benefit of React hooks?', a: 'Allows using state and lifecycle features inside functional components.' },
+                { q: 'What does cosine similarity measure in Vector DBs?', a: 'Measures the directional angle between two vector embeddings in geometric space.' },
+                { q: 'How does JWT authentication work?', a: 'Issues a digitally signed token upon login, passed in HTTP authorization headers for stateless API validation.' }
+              ].map((card, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => alert(`💡 Answer: ${card.a}`)}
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-glass)',
+                    borderRadius: '16px',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.05)',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#10b981', display: 'block', marginBottom: '4px' }}>
+                    CARD #{idx + 1} • CLICK FOR ANSWER
+                  </span>
+                  <strong style={{ fontSize: '0.88rem', color: 'var(--text-title)', display: 'block', marginBottom: '6px' }}>
+                    Q: {card.q}
+                  </strong>
+                  <span style={{ fontSize: '0.78rem', color: '#6366f1', fontWeight: 700 }}>
+                    💡 Tap to Reveal AI Answer →
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}

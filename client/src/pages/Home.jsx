@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import api from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 import {
@@ -136,7 +137,7 @@ const Home = () => {
     setTimeout(() => setIsTyping(false), 400);
   };
 
-  const displayCourses = dbCourses.length >= 3 ? dbCourses : FEATURED_COURSES;
+  const displayCourses = (dbCourses.length >= 3 ? dbCourses : FEATURED_COURSES).slice(0, 3);
   const currentPrompt = PRESET_PROMPTS[activePromptIndex];
 
   return (
@@ -292,8 +293,8 @@ const Home = () => {
                   </span>
                 </div>
 
-                {/* Prompt Selector Pills */}
-                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '10px' }}>
+                {/* Prompt Selector Pills - 2x2 Grid Layout Without Scrollbar */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '12px' }}>
                   {PRESET_PROMPTS.map((p, idx) => (
                     <button
                       key={idx}
@@ -302,12 +303,14 @@ const Home = () => {
                         background: activePromptIndex === idx ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(255,255,255,0.08)',
                         color: activePromptIndex === idx ? '#ffffff' : '#cbd5e1',
                         border: 'none',
-                        padding: '5px 12px',
-                        borderRadius: '16px',
+                        padding: '6px 10px',
+                        borderRadius: '14px',
                         fontSize: '0.72rem',
                         fontWeight: 700,
                         cursor: 'pointer',
-                        whiteSpace: 'nowrap'
+                        textAlign: 'center',
+                        boxShadow: activePromptIndex === idx ? '0 4px 12px rgba(99,102,241,0.35)' : 'none',
+                        transition: 'all 0.2s ease'
                       }}
                     >
                       {p.label}

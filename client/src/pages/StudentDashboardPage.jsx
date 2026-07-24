@@ -456,6 +456,33 @@ const StudentDashboardPage = () => {
                 </div>
               </div>
 
+              {/* ADVANCED AI LEARNING ANALYTICS & FOCUS HOUR TRACKER BANNER */}
+              <div className="glass-card" style={{ padding: '24px', borderRadius: '20px', background: 'linear-gradient(135deg, rgba(16,185,129,0.08), rgba(99,102,241,0.08))', border: '1px solid rgba(16,185,129,0.3)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', textAlign: 'center' }}>
+                <div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                    ⏱️ WEEKLY FOCUS HOURS
+                  </span>
+                  <strong style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-title)' }}>14.5 hrs</strong>
+                  <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, display: 'block' }}>+2.4 hrs vs last week</span>
+                </div>
+
+                <div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                    🧠 MEMORY RETENTION SCORE
+                  </span>
+                  <strong style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-title)' }}>94.2%</strong>
+                  <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 700, display: 'block' }}>High AI Retention Rate</span>
+                </div>
+
+                <div>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '4px' }}>
+                    🎯 PREDICTED QUIZ SCORE
+                  </span>
+                  <strong style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-title)' }}>98 / 100 A+</strong>
+                  <span style={{ fontSize: '0.75rem', color: '#f59e0b', fontWeight: 700, display: 'block' }}>Certified Ready</span>
+                </div>
+              </div>
+
               {/* STATS ROW */}
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
                 <div className="glass-card" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(132, 85, 239, 0.3)', boxShadow: '0 0 20px rgba(132, 85, 239, 0.15)' }}>
