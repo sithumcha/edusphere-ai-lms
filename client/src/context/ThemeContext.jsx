@@ -35,7 +35,7 @@ export const PRESETS = {
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('lms_theme') || 'dark';
+    return localStorage.getItem('lms_theme') || 'light';
   });
 
   const [preset, setPreset] = useState(() => {

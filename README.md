@@ -16,13 +16,33 @@
 
 ## 📸 Platform Visual Showcase Gallery
 
-| **Home Page Hero & AI Interactive Sandbox** | **Course Player & Interactive Video Lab** |
+| **Home Page Hero & AI Interactive Sandbox** | **Courses Catalog & Filtering Engine** |
 | :---: | :---: |
-| ![Hero Preview](https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&auto=format&fit=crop&q=80) | ![Course Player](https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&auto=format&fit=crop&q=80) |
+| ![Home Page](./screenshots/home_page.png) | ![Courses Catalog](./screenshots/courses_catalog.png) |
 
-| **AI Code Sandbox Studio & Labs** | **QR Verifiable PDF Certificates & Invoices** |
+| **AI Career Roadmap Advisor (`/career-roadmap`)** | **Interactive Multi-Language Code Sandbox (`/code-sandbox`)** |
 | :---: | :---: |
-| ![Code Sandbox](https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=600&auto=format&fit=crop&q=80) | ![Verified Credentials](https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=600&auto=format&fit=crop&q=80) |
+| ![AI Career Roadmap](./screenshots/career_roadmap.png) | ![Code Sandbox](./screenshots/code_sandbox.png) |
+
+| **AI Voice Mock Interview Studio (`/mock-interview`)** | **Virtual Classroom Webinar Studio (`/virtual-classroom`)** |
+| :---: | :---: |
+| ![Mock Interview](./screenshots/mock_interview.png) | ![Virtual Classroom](./screenshots/virtual_classroom.png) |
+
+| **Global Leaderboard & XP Rankings (`/leaderboard`)** | **AI Verified Resume & Portfolio Builder (`/resume-builder`)** |
+| :---: | :---: |
+| ![Leaderboard](./screenshots/leaderboard.png) | ![Resume Builder](./screenshots/resume_builder.png) |
+
+| **Student Learning Dashboard & Streaks** | **Instructor Studio & Course Management** |
+| :---: | :---: |
+| ![Student Dashboard](./screenshots/student_dashboard.png) | ![Instructor Dashboard](./screenshots/instructor_dashboard.png) |
+
+| **Admin Bento Stats & Platform Overseer** | **Stripe Payment Gateway & PDF Invoices (`/checkout`)** |
+| :---: | :---: |
+| ![Admin Dashboard](./screenshots/admin_dashboard.png) | ![Stripe Checkout](./screenshots/checkout_stripe.png) |
+
+| **How to Use User Guide & AI Suite Overview (`/how-to-use`)** |
+| :---: |
+| ![How to Use Guide](./screenshots/how_to_use_guide.png) |
 
 ---
 
